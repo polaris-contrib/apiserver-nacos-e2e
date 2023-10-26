@@ -4,7 +4,7 @@ import com.alibaba.nacos.api.naming.NamingMaintainService;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.common.utils.CollectionUtils;
-import com.google.common.base.Preconditions;
+import com.alibaba.nacos.shaded.com.google.common.base.Preconditions;
 
 import java.util.HashMap;
 import java.util.List;

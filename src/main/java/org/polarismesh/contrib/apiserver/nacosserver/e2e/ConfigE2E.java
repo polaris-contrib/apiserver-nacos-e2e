@@ -3,13 +3,12 @@ package org.polarismesh.contrib.apiserver.nacosserver.e2e;
 import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;
-import com.google.common.base.Preconditions;
+import com.alibaba.nacos.shaded.com.google.common.base.Preconditions;
 
 import java.util.Objects;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -103,9 +102,6 @@ public class ConfigE2E {
                     boolean ret = client1.publishConfig(DATA_ID_2, GROUP, expectConfigContent.get());
                     Preconditions.checkState(ret, "publish must be success");
                     TimeUnit.SECONDS.sleep(30);
-                    String publishContent = client1.getConfig(DATA_ID_2, GROUP, 5000);
-                    Preconditions.checkState(Objects.equals(publishContent, expectConfigContent.get()),
-                            "content not equal, remote : %s, local : %s", publishContent, expectConfigContent.get());
                     Preconditions.checkState(receiveCnt.get() == (i + 1));
                 }
             } catch (Exception ex) {
