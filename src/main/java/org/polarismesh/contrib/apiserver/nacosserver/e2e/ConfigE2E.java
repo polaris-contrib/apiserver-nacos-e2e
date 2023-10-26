@@ -50,7 +50,7 @@ public class ConfigE2E {
         ConfigService client1 = context.client1;
         ConfigService client2 = context.client2;
 
-        String mockContent = "hello, polarismesh";
+        String mockContent = "hello, polarismesh ";
         boolean ret = client1.publishConfig(DATA_ID_1, GROUP, mockContent);
         Preconditions.checkState(ret, "publish must be success");
 
