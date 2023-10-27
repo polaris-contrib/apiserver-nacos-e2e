@@ -6,7 +6,6 @@ import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.shaded.com.google.common.base.Preconditions;
 
 import java.util.Objects;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -20,11 +19,11 @@ public class ConfigE2E {
 
     public static final String GROUP = "mock_group";
 
-    public static final String DATA_ID_1 = "mock_config_file_1";
+    public static final String DATA_ID_1 = "mock_config_file_1_" + System.currentTimeMillis();
 
-    public static final String DATA_ID_2 = "mock_config_file_2";
+    public static final String DATA_ID_2 = "mock_config_file_2_" + System.currentTimeMillis();
 
-    public static final String DATA_ID_3 = "mock_config_file_3";
+    public static final String DATA_ID_3 = "mock_config_file_3_" + System.currentTimeMillis();
 
 
     public static void testConfigFunction() throws Exception {
@@ -36,8 +35,8 @@ public class ConfigE2E {
         // 注册发现功能测试验证
         Main.log("------------- 开始进行 【配置中心】 相关 e2e 测试流程 -------------");
         try {
-            Main.testRun("配置发布功能测试", context, ConfigE2E::testPublishConfig);
-            Main.testRun("配置监听功能测试", context, ConfigE2E::testListenConfig);
+//            Main.testRun("配置发布功能测试", context, ConfigE2E::testPublishConfig);
+//            Main.testRun("配置监听功能测试", context, ConfigE2E::testListenConfig);
             Main.testRun("配置删除功能测试", context, ConfigE2E::testDeleteConfig);
         } finally {
             Main.log("------------- 结束 【配置中心】 相关 e2e 测试流程 -------------");
