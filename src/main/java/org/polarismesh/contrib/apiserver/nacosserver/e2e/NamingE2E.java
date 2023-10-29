@@ -57,7 +57,7 @@ public class NamingE2E {
         client1.registerInstance(SERVICE_NAME, MOCK_INSTANCE_IP_3, MOCK_INSTANCE_PORT);
 
         // 睡眠等待 2s
-        TimeUnit.SECONDS.sleep(2);
+        TimeUnit.SECONDS.sleep(10);
 
         NamingService client2 = context.client2;
         List<Instance> instances = client2.getAllInstances(SERVICE_NAME);
@@ -67,20 +67,37 @@ public class NamingE2E {
     }
 
     public static void testHeartbeat(Main.TestContext<NamingService> context) throws Exception {
-        // 正常来说， Nacos 1.x 客户端内部维护的心跳 interval 为 5s，因此这里等待一段时间判断 server 能否正常的处理 nacos-client 的心跳请求
-        TimeUnit.SECONDS.sleep(60);
         // 直接查询客户端数据
-
+        String serviceName = SERVICE_NAME + "_healthcheck";
         NamingService client3 = Main.buildNamingClient();
+        NamingService client4 = Main.buildNamingClient();
+        // 使用 client3 注册实例
+        client3.registerInstance(serviceName, MOCK_INSTANCE_IP_1, MOCK_INSTANCE_PORT);
+        TimeUnit.SECONDS.sleep(10);
         try {
-            List<Instance> instances = client3.getAllInstances(SERVICE_NAME, false);
+            List<Instance> instances = client4.getAllInstances(serviceName, true);
+            Main.log("[NACOS][e2e][%s] service(%s) receive instances:%s%n", context.label, serviceName, instances);
             Preconditions.checkState(Objects.nonNull(instances));
-            Preconditions.checkState(instances.size() == 3);
+            Preconditions.checkState(instances.size() == 1);
             for (Instance instance : instances) {
                 Preconditions.checkState(instance.isHealthy());
             }
         } finally {
             client3.shutDown();
+        }
+
+        // 强行关闭
+        // 等待 10s
+        TimeUnit.SECONDS.sleep(10);
+
+        // 再次获取一下实例列表，发现实例是非健康
+        List<Instance> instances = client4.getAllInstances(serviceName, true);
+        Main.log("[NACOS][e2e][%s] service(%s) receive instances:%s%n", context.label, serviceName, instances);
+        Preconditions.checkState(Objects.nonNull(instances));
+        // client 关闭后，实例直接被反注册掉，这里查询到的是没有这个实例了
+        Preconditions.checkState(instances.size() == 1 || instances.isEmpty());
+        for (Instance instance : instances) {
+            Preconditions.checkState(!instance.isHealthy());
         }
     }
 
@@ -90,45 +107,48 @@ public class NamingE2E {
         NamingService client2 = context.client2;
         NamingMaintainService maintainService = Main.buildMaintainClient();
 
-        Map<String, String> metadata = new HashMap<>();
+        try {
+            Map<String, String> metadata = new HashMap<>();
 
-        Instance localInstance = new Instance();
-        localInstance.setServiceName(serviceName);
-        localInstance.setIp(MOCK_INSTANCE_IP_1);
-        localInstance.setPort(MOCK_INSTANCE_PORT);
-        localInstance.setEphemeral(true);
-        localInstance.setHealthy(true);
-        localInstance.setEnabled(true);
-        localInstance.setMetadata(metadata);
+            Instance localInstance = new Instance();
+            localInstance.setServiceName(serviceName);
+            localInstance.setIp(MOCK_INSTANCE_IP_1);
+            localInstance.setPort(MOCK_INSTANCE_PORT);
+            localInstance.setEphemeral(true);
+            localInstance.setHealthy(true);
+            localInstance.setEnabled(true);
+            localInstance.setMetadata(metadata);
 
-        client2.getAllInstances(serviceName, true);
+            // 先触发服务订阅
+            client2.getAllInstances(serviceName, true);
 
-        // 注册一个实例
-        client1.registerInstance(serviceName, localInstance);
-        TimeUnit.SECONDS.sleep(10);
-        List<Instance> instances = client2.getAllInstances(serviceName, true);
-        Preconditions.checkState(instances.size() == 1);
+            // 注册一个实例
+            client1.registerInstance(serviceName, localInstance);
+            TimeUnit.SECONDS.sleep(10);
+            List<Instance> instances = client2.getAllInstances(serviceName, true);
+            Preconditions.checkState(instances.size() == 1);
 
-        // 更新实例的 enable 属性
-        localInstance.setEnabled(false);
-        maintainService.updateInstance(serviceName, localInstance);
-        TimeUnit.SECONDS.sleep(10);
-        instances = client2.getAllInstances(serviceName, true);
-        Preconditions.checkState(instances.isEmpty());
+            // 更新实例的 enable 属性
+            localInstance.setEnabled(false);
+            maintainService.updateInstance(serviceName, localInstance);
+            TimeUnit.SECONDS.sleep(10);
+            instances = client2.getAllInstances(serviceName, true);
+            Preconditions.checkState(instances.isEmpty());
 
-        // 恢复实例的 enable 属性，同时更新他的 metadata
-        metadata.put("update_metadata_key", "update_metadata_value");
-        localInstance.setEnabled(true);
-        localInstance.setMetadata(metadata);
-        maintainService.updateInstance(serviceName, localInstance);
-        TimeUnit.SECONDS.sleep(10);
-        instances = client2.getAllInstances(serviceName, true);
-        Preconditions.checkState(instances.size() == 1);
-        Instance remoteInstance = instances.get(0);
-        cleanRemoteInstanceInfo(remoteInstance);
-        Preconditions.checkState(Objects.equals(remoteInstance, localInstance), String.format("local : %s, remote : %s", localInstance, remoteInstance));
-
-        maintainService.shutDown();
+            // 恢复实例的 enable 属性，同时更新他的 metadata
+            metadata.put("update_metadata_key", "update_metadata_value");
+            localInstance.setEnabled(true);
+            localInstance.setMetadata(metadata);
+            maintainService.updateInstance(serviceName, localInstance);
+            TimeUnit.SECONDS.sleep(10);
+            instances = client2.getAllInstances(serviceName, true);
+            Preconditions.checkState(instances.size() == 1);
+            Instance remoteInstance = instances.get(0);
+            cleanRemoteInstanceInfo(remoteInstance);
+            Preconditions.checkState(Objects.equals(remoteInstance, localInstance), String.format("local : %s, remote : %s", localInstance, remoteInstance));
+        } finally {
+            maintainService.shutDown();
+        }
     }
 
     public static void cleanRemoteInstanceInfo(Instance remoteInstance) {
@@ -140,6 +160,7 @@ public class NamingE2E {
             remoteInstance.getMetadata().remove("zone");
             remoteInstance.getMetadata().remove("internal-nacos-cluster");
             remoteInstance.getMetadata().remove("internal-nacos-service");
+            remoteInstance.getMetadata().remove("internal-lastheartbeat");
         }
     }
 

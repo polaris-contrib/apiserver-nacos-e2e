@@ -35,8 +35,8 @@ public class ConfigE2E {
         // 注册发现功能测试验证
         Main.log("------------- 开始进行 【配置中心】 相关 e2e 测试流程 -------------");
         try {
-//            Main.testRun("配置发布功能测试", context, ConfigE2E::testPublishConfig);
-//            Main.testRun("配置监听功能测试", context, ConfigE2E::testListenConfig);
+            Main.testRun("配置发布功能测试", context, ConfigE2E::testPublishConfig);
+            Main.testRun("配置监听功能测试", context, ConfigE2E::testListenConfig);
             Main.testRun("配置删除功能测试", context, ConfigE2E::testDeleteConfig);
         } finally {
             Main.log("------------- 结束 【配置中心】 相关 e2e 测试流程 -------------");
@@ -131,7 +131,7 @@ public class ConfigE2E {
 
             @Override
             public void receiveConfigInfo(String receiveRet) {
-                Main.log("[NACOS][e2e][%s] config(%s) receive content:%s%n", context.label, DATA_ID_2, receiveRet);
+                Main.log("[NACOS][e2e][%s] config(%s) receive content:%s%n", context.label, DATA_ID_3, receiveRet);
                 try {
                     notifier.put(new Object());
                 } catch (InterruptedException e) {

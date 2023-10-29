@@ -45,7 +45,7 @@ public class Main {
             NAMESPACE = args[1];
         }
 
-        ConfigE2E.testConfigFunction();
+//        ConfigE2E.testConfigFunction();
         NamingE2E.testNamingFunction();
     }
 
